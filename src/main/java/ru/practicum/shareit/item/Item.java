@@ -1,6 +1,7 @@
-package ru.practicum.shareit.item.dto;
+package ru.practicum.shareit.item;
 
-import lombok.AllArgsConstructor;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 import ru.practicum.shareit.request.ItemRequest;
 import ru.practicum.shareit.user.User;
@@ -9,22 +10,24 @@ import ru.practicum.shareit.user.User;
  * TODO Sprint add-controllers.
  */
 @Data
-@AllArgsConstructor
-public class ItemDto {
+public class Item {
 
     /** Уникальный идентификатор вещи */
     private long id;
 
     /** Краткое название вещи */
+    @NotBlank(message = "Название не может быть пустым")
+    @Size(max = 100, message = "Максимальная длина названия 100 символов")
     private String name;
 
     /** Развёрнутое описание вещи */
     private String description;
 
     /** Доступность вещи для аренды */
-    private boolean available;
+    private Boolean available;
 
     /** Владелец вещи */
+    @NotBlank(message = "Владелец должен быть указан")
     private User owner;
 
     /** Запрос, по которому создана вещь */
