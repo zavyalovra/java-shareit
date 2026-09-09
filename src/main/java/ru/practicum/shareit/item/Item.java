@@ -2,7 +2,10 @@ package ru.practicum.shareit.item;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import ru.practicum.shareit.item.dto.ItemRequestDto;
 import ru.practicum.shareit.request.ItemRequest;
 import ru.practicum.shareit.user.User;
 
@@ -10,6 +13,8 @@ import ru.practicum.shareit.user.User;
  * TODO Sprint add-controllers.
  */
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class Item {
 
     /** Уникальный идентификатор вещи */
@@ -32,4 +37,18 @@ public class Item {
 
     /** Запрос, по которому создана вещь */
     private ItemRequest request;
+
+    public void update(ItemRequestDto itemDto) {
+        if (itemDto.getName() != null) {
+            this.setName(itemDto.getName());
+        }
+
+        if (itemDto.getDescription() != null) {
+            this.setDescription(itemDto.getDescription());
+        }
+
+        if (itemDto.getAvailable() != null) {
+            this.setAvailable(itemDto.getAvailable());
+        }
+    }
 }

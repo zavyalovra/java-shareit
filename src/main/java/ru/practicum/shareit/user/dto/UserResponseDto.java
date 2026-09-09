@@ -5,7 +5,7 @@ import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class UserDto {
+public class UserResponseDto {
 
     /** Уникальный идентификатор пользователя */
     private Long id;

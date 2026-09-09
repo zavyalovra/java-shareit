@@ -4,7 +4,7 @@ import jakarta.validation.constraints.Email;
 import lombok.Data;
 
 @Data
-public class UpdateUserRequestDto {
+public class UserRequestDto {
 
     /** Имя или логин пользователя */
     private String name;

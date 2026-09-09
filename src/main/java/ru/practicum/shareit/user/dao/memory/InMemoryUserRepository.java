@@ -5,7 +5,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
 import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.dao.UserRepository;
-import ru.practicum.shareit.user.dto.UpdateUserRequestDto;
 
 import java.util.*;
 
@@ -43,13 +42,11 @@ public class InMemoryUserRepository implements UserRepository {
     }
 
     @Override
-    public User update(Long userId, UpdateUserRequestDto user) {
-        User updateUser = users.get(userId);
-        updateUser.setName(user.getName());
-        updateUser.setEmail(user.getEmail());
-
+    public User save(User user) {
+        users.put(user.getId(), user);
         log.info("Обновление данных пользователя: {}", user);
-        return updateUser;
+
+        return user;
     }
 
     @Override

@@ -2,15 +2,10 @@ package ru.practicum.shareit.item.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import ru.practicum.shareit.request.ItemRequest;
-import ru.practicum.shareit.user.User;
 
-/**
- * TODO Sprint add-controllers.
- */
 @Data
 @AllArgsConstructor
-public class ItemDto {
+public class ItemResponseDto {
 
     /** Уникальный идентификатор вещи */
     private long id;
@@ -22,11 +17,5 @@ public class ItemDto {
     private String description;
 
     /** Доступность вещи для аренды */
-    private boolean available;
-
-    /** Владелец вещи */
-    private User owner;
-
-    /** Запрос, по которому создана вещь */
-    private ItemRequest request;
+    private Boolean available;
 }
