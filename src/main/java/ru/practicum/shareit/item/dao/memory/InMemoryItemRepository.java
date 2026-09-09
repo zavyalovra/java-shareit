@@ -3,7 +3,6 @@ package ru.practicum.shareit.item.dao.memory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
-import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.item.Item;
 import ru.practicum.shareit.item.ItemRepository;
 
@@ -46,6 +45,18 @@ public class InMemoryItemRepository implements ItemRepository {
         log.info("Обновление данных вещи: {}", item);
 
         return item;
+    }
+
+    @Override
+    public List<Item> search(String text) {
+        String pattern = text.toLowerCase();
+
+        return items.values().stream()
+                .filter(item -> item.getAvailable().equals(true))
+                .filter(item ->
+                        item.getName().toLowerCase().contains(pattern) ||
+                        item.getDescription().toLowerCase().contains(pattern))
+                .toList();
     }
 
     private long getNextId() {

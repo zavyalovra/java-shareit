@@ -40,4 +40,9 @@ public class ItemController {
                                       @RequestBody ItemRequestDto itemRequestDto) {
         return itemService.updateItem(itemId, userId, itemRequestDto);
     }
+
+    @GetMapping("/search")
+    public List<ItemResponseDto> searchItems(@RequestParam String text) {
+        return itemService.searchItems(text);
+    }
 }

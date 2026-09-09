@@ -59,4 +59,17 @@ public class ItemServiceImpl implements ItemService {
 
         return ItemMapper.toResponseDto(savedItem);
     }
+
+    @Override
+    public List<ItemResponseDto> searchItems(String text) {
+        if (text.isBlank()) {
+            return List.of();
+        }
+
+        List<Item> searchResult = itemRepository.search(text);
+
+        return searchResult.stream()
+                .map(ItemMapper::toResponseDto)
+                .toList();
+    }
 }

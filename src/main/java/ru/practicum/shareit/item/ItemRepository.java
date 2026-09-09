@@ -9,6 +9,8 @@ public interface ItemRepository {
 
     Optional<Item> findById(Long itemId);
 
+    List<Item> search(String text);
+
     Item create(Item item);
 
     Item save(Item item);
