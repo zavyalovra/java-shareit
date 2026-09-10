@@ -52,11 +52,17 @@ public class InMemoryItemRepository implements ItemRepository {
         String pattern = text.toLowerCase();
 
         return items.values().stream()
-                .filter(item -> item.getAvailable().equals(true))
-                .filter(item ->
-                        item.getName().toLowerCase().contains(pattern) ||
-                        item.getDescription().toLowerCase().contains(pattern))
+                .filter(item -> Boolean.TRUE.equals(item.getAvailable()))
+                .filter(item -> matchIfPresent(item.getName(), pattern)
+                                  || matchIfPresent(item.getDescription(), pattern))
                 .toList();
+    }
+
+    private boolean matchIfPresent(String value, String pattern) {
+        if (value == null) {
+            return false;
+        }
+        return value.toLowerCase().contains(pattern);
     }
 
     private long getNextId() {

@@ -54,10 +54,6 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserResponseDto updateUser(Long userId, UserRequestDto userDto) {
         User user = getValidUser(userId);
-        if (userRepository.findByEmail(userDto.getEmail()).isPresent()) {
-            throw new ConflictException("Пользователь с email=" + userDto.getEmail() + " уже существует");
-        }
-
         userRepository.findByEmail(userDto.getEmail())
                         .filter(u -> !u.getId().equals(userId))
                         .ifPresent(u -> {

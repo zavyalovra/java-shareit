@@ -5,9 +5,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.item.dto.ItemRequestDto;
 import ru.practicum.shareit.item.dto.ItemResponseDto;
+import ru.practicum.shareit.item.dto.UpdateItemRequestDto;
 
 import java.util.List;
-import java.util.Optional;
 
 /**
  * TODO Sprint add-controllers.
@@ -24,7 +24,7 @@ public class ItemController {
     }
 
     @GetMapping("/{itemId}")
-    public Optional<Item> findItemById(@PathVariable Long itemId) {
+    public ItemResponseDto findItemById(@PathVariable Long itemId) {
         return itemService.getItemById(itemId);
     }
 
@@ -37,8 +37,8 @@ public class ItemController {
     @PatchMapping("/{itemId}")
     public ItemResponseDto updateItem(@PathVariable Long itemId,
                                       @RequestHeader("X-Sharer-User-Id") Long userId,
-                                      @RequestBody ItemRequestDto itemRequestDto) {
-        return itemService.updateItem(itemId, userId, itemRequestDto);
+                                      @Valid @RequestBody UpdateItemRequestDto itemDto) {
+        return itemService.updateItem(itemId, userId, itemDto);
     }
 
     @GetMapping("/search")
