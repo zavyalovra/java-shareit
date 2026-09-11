@@ -8,8 +8,6 @@ import java.util.List;
 
 public interface ItemService {
 
-    Item getValidItem(Long itemId);
-
     Item getValidItemByOwnerId(Long itemId, Long userId);
 
     List<ItemResponseDto> getByOwnerId(Long userId);

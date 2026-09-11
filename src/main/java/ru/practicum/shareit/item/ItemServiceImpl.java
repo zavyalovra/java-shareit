@@ -3,8 +3,8 @@ package ru.practicum.shareit.item;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import ru.practicum.shareit.exception.ForbiddenException;
 import ru.practicum.shareit.exception.NotFoundException;
-import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.item.dto.ItemRequestDto;
 import ru.practicum.shareit.item.dto.ItemResponseDto;
 import ru.practicum.shareit.item.dto.UpdateItemRequestDto;
@@ -37,9 +37,7 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public ItemResponseDto getItemById(Long itemId) {
-        Item item = itemRepository.findById(itemId)
-                .orElseThrow(() -> new NotFoundException("Вещь с id=" + itemId + " не найдена"));
-
+        Item item = getValidItem(itemId);
         return ItemMapper.toResponseDto(item);
     }
 
@@ -55,7 +53,7 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public ItemResponseDto updateItem(Long itemId, Long userId, UpdateItemRequestDto itemDto) {
         Item item = getValidItemByOwnerId(itemId, userId);
-        item.update(itemDto);
+        ItemMapper.applyUpdate(item, itemDto);
         Item savedItem = itemRepository.save(item);
 
         return ItemMapper.toResponseDto(savedItem);
@@ -74,8 +72,7 @@ public class ItemServiceImpl implements ItemService {
                 .toList();
     }
 
-    @Override
-    public Item getValidItem(Long itemId) {
+    private Item getValidItem(Long itemId) {
         return itemRepository.findById(itemId)
                 .orElseThrow(() -> new NotFoundException("Вещь с id=" + itemId + " не найдена"));
     }
@@ -85,8 +82,8 @@ public class ItemServiceImpl implements ItemService {
         Item item = getValidItem(itemId);
         User owner = userService.getValidUser(userId);
 
-        if (!item.getOwner().equals(owner)) {
-            throw new ValidationException("Пользователь " + item.getOwner().getName() + " не владелец вещи");
+        if (!item.getOwner().getId().equals(owner.getId())) {
+            throw new ForbiddenException("Пользователь не владелец вещи");
         }
 
         return item;

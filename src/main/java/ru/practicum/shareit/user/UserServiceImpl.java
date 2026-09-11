@@ -27,9 +27,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserResponseDto getUserById(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("Пользователь с id=" + userId + " не найден"));
-
+        User user = getValidUser(userId);
         return UserMapper.toResponseDto(user);
     }
 
@@ -62,7 +60,7 @@ public class UserServiceImpl implements UserService {
                             );
                         });
 
-        user.update(userDto);
+        UserMapper.applyUpdate(user, userDto);
         User savedUser = userRepository.save(user);
 
         return UserMapper.toResponseDto(savedUser);

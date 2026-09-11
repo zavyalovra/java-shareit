@@ -4,7 +4,6 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
-import ru.practicum.shareit.user.dto.UserRequestDto;
 
 /**
  * TODO Sprint add-controllers.
@@ -24,14 +23,4 @@ public class User {
     @NotNull(message = "Некорректный формат email")
     @Email(message = "Некорректный формат email")
     private String email;
-
-    public void update(UserRequestDto userDto) {
-        if (userDto.getName() != null) {
-            this.setName(userDto.getName());
-        }
-
-        if (userDto.getEmail() != null) {
-            this.setEmail(userDto.getEmail());
-        }
-    }
 }

@@ -8,6 +8,8 @@ import ru.practicum.shareit.user.dto.UserResponseDto;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class UserMapper {
 
+    private static UserRequestDto itemDto;
+
     public static User toUser(UserRequestDto userRequestDto) {
         User user = new User();
         user.setName(userRequestDto.getName());
@@ -22,5 +24,14 @@ public class UserMapper {
                 user.getName(),
                 user.getEmail()
         );
+    }
+
+    public static void applyUpdate(User user, UserRequestDto userDto) {
+        if (userDto.getName() != null) {
+            user.setName(userDto.getName());
+        }
+        if (userDto.getEmail() != null) {
+            user.setEmail(userDto.getEmail());
+        }
     }
 }
