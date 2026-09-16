@@ -1,0 +1,32 @@
+services:
+  db:
+    image: postgres:16.1
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./volumes/postgres:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_DB=shareit
+      - POSTGRES_USER=dbuser
+      - POSTGRES_PASSWORD=12345
+    healthcheck:
+      test: pg_isready -q -d $$POSTGRES_DB -U $$POSTGRES_USER
+      timeout: 5s
+      interval: 5s
+      retries: 10
+
+  db-init:
+    image: postgres:16.1
+    container_name: db-init
+    depends_on:
+      db:
+        condition: service_healthy
+    entrypoint:
+      - bash
+      - -c
+      - |
+        set -e
+        echo "Creating database schema..."
+        psql postgresql://dbuser:12345@db:5432/shareit -v ON_ERROR_STOP=1 -f schema.sql
+        echo "Database initialization completed."
