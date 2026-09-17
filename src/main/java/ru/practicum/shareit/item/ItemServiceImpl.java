@@ -1,38 +1,74 @@
 package ru.practicum.shareit.item;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import ru.practicum.shareit.booking.Booking;
+import ru.practicum.shareit.booking.BookingRepository;
+import ru.practicum.shareit.booking.dto.BookingShortDto;
 import ru.practicum.shareit.exception.ForbiddenException;
 import ru.practicum.shareit.exception.NotFoundException;
+import ru.practicum.shareit.item.dto.ItemOwnersResponseDto;
 import ru.practicum.shareit.item.dto.ItemRequestDto;
 import ru.practicum.shareit.item.dto.ItemResponseDto;
 import ru.practicum.shareit.item.dto.UpdateItemRequestDto;
 import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserService;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class ItemServiceImpl implements ItemService {
     private final ItemRepository itemRepository;
     private final UserService userService;
+    private final BookingRepository bookingRepository;
 
     @Autowired
     public ItemServiceImpl(
             UserService userService,
-            @Qualifier("InMemoryItemRepository") ItemRepository itemRepository) {
+            ItemRepository itemRepository,
+            BookingRepository bookingRepository) {
         this.itemRepository = itemRepository;
         this.userService = userService;
+        this.bookingRepository = bookingRepository;
     }
 
     @Override
-    public List<ItemResponseDto> getByOwnerId(Long userId) {
+    public List<ItemOwnersResponseDto> getByOwnerId(Long userId) {
         User owner = userService.getValidUser(userId);
+        List<Item> items = itemRepository.findByOwnerId(owner.getId());
 
-        return itemRepository.findByOwnerId(owner.getId()).stream()
-                .map(ItemMapper::toResponseDto)
+        if (items.isEmpty()) {
+            return List.of();
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        List<Long> itemsIds = items.stream()
+                .map(Item::getId)
                 .toList();
+
+        Map<Long, Booking> lastByItem = bookingRepository.findLastBooking(itemsIds, now).stream()
+                .collect(Collectors.toMap(b -> b.getItem().getId(), b -> b, (a, b) -> a));
+
+        Map<Long, Booking> nextByItem = bookingRepository.findNextBooking(itemsIds, now).stream()
+                .collect(Collectors.toMap(b -> b.getItem().getId(), b -> b, (a, b) -> a));
+
+        return items.stream()
+                .map(item -> ItemMapper.toItemOwnersResponseDto(
+                        item,
+                        toShortDto(lastByItem.get(item.getId())),
+                        toShortDto(nextByItem.get(item.getId()))
+                        ))
+                        .toList();
+    }
+
+    private BookingShortDto toShortDto(Booking booking) {
+        if (booking == null) {
+            return null;
+        }
+        return new BookingShortDto(booking.getStart(), booking.getEnd());
     }
 
     @Override
@@ -44,10 +80,11 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public ItemResponseDto createItem(Long userId, ItemRequestDto itemDto) {
         User owner = userService.getValidUser(userId);
-        Item item = ItemMapper.toItem(owner, itemDto);
-        Item createdItem = itemRepository.create(item);
+        Item item = ItemMapper.toItem(itemDto);
+        item.setOwner(owner);
+        Item savedItem = itemRepository.save(item);
 
-        return ItemMapper.toResponseDto(createdItem);
+        return ItemMapper.toResponseDto(savedItem);
     }
 
     @Override
@@ -72,7 +109,8 @@ public class ItemServiceImpl implements ItemService {
                 .toList();
     }
 
-    private Item getValidItem(Long itemId) {
+    @Override
+    public Item getValidItem(Long itemId) {
         return itemRepository.findById(itemId)
                 .orElseThrow(() -> new NotFoundException("Вещь с id=" + itemId + " не найдена"));
     }

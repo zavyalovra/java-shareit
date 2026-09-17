@@ -1,20 +1,25 @@
 package ru.practicum.shareit.user;
 
-import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.exception.ConflictException;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.ValidationException;
-import ru.practicum.shareit.user.dao.UserRepository;
 import ru.practicum.shareit.user.dto.UserRequestDto;
 import ru.practicum.shareit.user.dto.UserResponseDto;
 
 import java.util.List;
 
+@Slf4j
 @Service
-@RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
+
+    @Autowired
+    public UserServiceImpl(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
 
     @Override
     public List<UserResponseDto> getAllUsers() {
@@ -44,9 +49,9 @@ public class UserServiceImpl implements UserService {
         }
 
         User newUser = UserMapper.toUser(userDto);
-        User createdUser = userRepository.create(newUser);
+        User savedUser = userRepository.save(newUser);
 
-        return UserMapper.toResponseDto(createdUser);
+        return UserMapper.toResponseDto(savedUser);
     }
 
     @Override
@@ -68,14 +73,18 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void deleteUser(Long userId) {
-        userRepository.delete(userId);
+        userRepository.deleteById(userId);
     }
 
     @Override
     public User getValidUser(Long userId) {
         if (userId == null) {
-            throw new ValidationException("Имя владельца вещи не задано");
+            throw new ValidationException("Имя пользователя не задано");
         }
+
+        log.warn("getValidUser userId={}", userId);
+        log.warn("all users ids = {}", userRepository.findAll().stream().map(User::getId).toList());
+
         return userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("Пользователь с id = " + userId + " не найден"));
     }

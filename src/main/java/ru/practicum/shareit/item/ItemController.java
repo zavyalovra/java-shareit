@@ -1,8 +1,9 @@
 package ru.practicum.shareit.item;
 
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import ru.practicum.shareit.item.dto.ItemOwnersResponseDto;
 import ru.practicum.shareit.item.dto.ItemRequestDto;
 import ru.practicum.shareit.item.dto.ItemResponseDto;
 import ru.practicum.shareit.item.dto.UpdateItemRequestDto;
@@ -14,12 +15,16 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/items")
-@RequiredArgsConstructor
 public class ItemController {
     private final ItemService itemService;
 
+    @Autowired
+    public ItemController(ItemService itemService) {
+        this.itemService = itemService;
+    }
+
     @GetMapping
-    public List<ItemResponseDto> findOwnerItems(@RequestHeader("X-Sharer-User-Id") Long userId) {
+    public List<ItemOwnersResponseDto> findOwnerItems(@RequestHeader("X-Sharer-User-Id") Long userId) {
         return itemService.getByOwnerId(userId);
     }
 

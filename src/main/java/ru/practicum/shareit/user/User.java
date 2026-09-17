@@ -1,17 +1,22 @@
 package ru.practicum.shareit.user;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import lombok.Data;
+import jakarta.persistence.*;
+import lombok.*;
+import jakarta.validation.constraints.*;
 
 /**
  * TODO Sprint add-controllers.
  */
-@Data
+@Entity
+@Table(name = "users", schema = "public")
+@Getter
+@Setter
+@ToString
 public class User {
 
     /** Уникальный идентификатор пользователя */
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     /** Имя или логин пользователя */
@@ -23,4 +28,16 @@ public class User {
     @NotNull(message = "Некорректный формат email")
     @Email(message = "Некорректный формат email")
     private String email;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof User)) return false;
+        return id != null && id.equals(((User) o).getId());
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
 }
