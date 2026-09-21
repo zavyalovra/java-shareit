@@ -22,11 +22,3 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    entrypoint:
-      - bash
-      - -c
-      - |
-        set -e
-        echo "Creating database schema..."
-        psql postgresql://dbuser:12345@db:5432/shareit -v ON_ERROR_STOP=1 -f schema.sql
-        echo "Database initialization completed."

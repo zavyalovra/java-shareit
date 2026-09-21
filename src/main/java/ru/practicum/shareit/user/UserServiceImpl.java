@@ -3,6 +3,7 @@ package ru.practicum.shareit.user;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.exception.ConflictException;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.ValidationException;
@@ -13,6 +14,7 @@ import java.util.List;
 
 @Slf4j
 @Service
+@Transactional(readOnly = true)
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
 
@@ -37,6 +39,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public UserResponseDto createUser(UserRequestDto userDto) {
         if (userDto.getName() == null) {
             throw new ValidationException("Имя пользователя не задано");
@@ -55,6 +58,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public UserResponseDto updateUser(Long userId, UserRequestDto userDto) {
         User user = getValidUser(userId);
         userRepository.findByEmail(userDto.getEmail())
@@ -72,6 +76,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public void deleteUser(Long userId) {
         userRepository.deleteById(userId);
     }
@@ -81,9 +86,6 @@ public class UserServiceImpl implements UserService {
         if (userId == null) {
             throw new ValidationException("Имя пользователя не задано");
         }
-
-        log.debug("getValidUser userId={}", userId);
-        log.debug("all users ids = {}", userRepository.findAll().stream().map(User::getId).toList());
 
         return userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("Пользователь с id = " + userId + " не найден"));

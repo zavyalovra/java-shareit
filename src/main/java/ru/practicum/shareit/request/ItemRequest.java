@@ -31,6 +31,7 @@ public class ItemRequest {
     /** Пользователь, создавший запрос */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "requestor_id")
+    @ToString.Exclude
     private User requestor;
 
     /** Дата и время создания запроса */

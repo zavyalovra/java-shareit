@@ -2,8 +2,10 @@ package ru.practicum.shareit.item;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.Booking;
 import ru.practicum.shareit.booking.BookingRepository;
+import ru.practicum.shareit.booking.BookingStatus;
 import ru.practicum.shareit.booking.dto.BookingShortDto;
 import ru.practicum.shareit.exception.ForbiddenException;
 import ru.practicum.shareit.exception.NotFoundException;
@@ -15,10 +17,10 @@ import ru.practicum.shareit.user.UserService;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional(readOnly = true)
 public class ItemServiceImpl implements ItemService {
     private final ItemRepository itemRepository;
     private final UserService userService;
@@ -57,11 +59,18 @@ public class ItemServiceImpl implements ItemService {
         Map<Long, Booking> nextByItem = bookingRepository.findNextBooking(itemsIds, now).stream()
                 .collect(Collectors.toMap(b -> b.getItem().getId(), b -> b, (a, b) -> a));
 
+        Map<Long, List<CommentResponseDto>> commentsByItem = commentRepository.findByItemIdInOrderByCreatedAsc(itemsIds).stream()
+                .collect(Collectors.groupingBy(
+                        c -> c.getItem().getId(),
+                        Collectors.mapping(ItemMapper::toCommentResponseDto, Collectors.toList())
+                ));
+
         return items.stream()
                 .map(item -> ItemMapper.toItemOwnersResponseDto(
                         item,
                         toShortDto(lastByItem.get(item.getId())),
-                        toShortDto(nextByItem.get(item.getId()))
+                        toShortDto(nextByItem.get(item.getId())),
+                        commentsByItem.getOrDefault(item.getId(), List.of())
                         ))
                         .toList();
     }
@@ -80,7 +89,7 @@ public class ItemServiceImpl implements ItemService {
         BookingShortDto lastBooking = null;
         BookingShortDto nextBooking = null;
 
-        List<CommentResponseDto> comments = commentRepository.findByItemId(itemId).stream()
+        List<CommentResponseDto> comments = commentRepository.findByItemIdOrderByCreatedAsc(itemId).stream()
                 .map(ItemMapper::toCommentResponseDto)
                 .toList();
 
@@ -100,6 +109,7 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    @Transactional
     public ItemResponseDto createItem(Long userId, ItemRequestDto itemDto) {
         User owner = userService.getValidUser(userId);
         Item item = ItemMapper.toItem(itemDto);
@@ -110,6 +120,7 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    @Transactional
     public ItemResponseDto updateItem(Long itemId, Long userId, UpdateItemRequestDto itemDto) {
         Item item = getValidItemByOwnerId(itemId, userId);
         ItemMapper.applyUpdate(item, itemDto);
@@ -150,13 +161,15 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    @Transactional
     public CommentResponseDto createComment(Long itemId, Long userId, CommentRequestDto commentDto) {
+        Item item = getValidItem(itemId);
+        User author = userService.getValidUser(userId);
+
         if (!validateBooking(itemId, userId)) {
             throw new ValidationException("Пользователь не найден в истории брони этой вещи");
         }
 
-        Item item = getValidItem(itemId);
-        User author = userService.getValidUser(userId);
         Comment comment = CommentMapper.toComment(commentDto);
         comment.setItem(item);
         comment.setAuthor(author);
@@ -168,10 +181,7 @@ public class ItemServiceImpl implements ItemService {
 
     private boolean validateBooking(Long itemId, Long userId) {
         LocalDateTime now = LocalDateTime.now();
-        Optional<Booking> existedBooking = bookingRepository.findCompletedBookings(itemId, userId, now)
-                .stream()
-                .findFirst();
-
-        return existedBooking.isPresent();
+        return bookingRepository
+                .existsByItemIdAndBookerIdAndStatusAndEndBefore(itemId, userId, BookingStatus.APPROVED, now);
     }
 }

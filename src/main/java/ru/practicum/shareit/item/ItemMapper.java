@@ -32,14 +32,16 @@ public class ItemMapper {
     public static ItemOwnersResponseDto toItemOwnersResponseDto(
             Item item,
             BookingShortDto lastBooking,
-            BookingShortDto nextBooking) {
+            BookingShortDto nextBooking,
+            List<CommentResponseDto> comments) {
         return new ItemOwnersResponseDto(
                 item.getId(),
                 item.getName(),
                 item.getDescription(),
                 item.getAvailable(),
                 lastBooking,
-                nextBooking
+                nextBooking,
+                comments
         );
     }
 

@@ -33,11 +33,13 @@ public class Item {
     /** Владелец вещи */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id")
+    @ToString.Exclude
     private User owner;
 
     /** Запрос, по которому создана вещь */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "request_id")
+    @ToString.Exclude
     private ItemRequest request;
 
     @Override

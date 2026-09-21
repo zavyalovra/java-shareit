@@ -2,6 +2,7 @@ package ru.practicum.shareit.booking;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.dto.BookingRequestDto;
 import ru.practicum.shareit.booking.dto.BookingResponseDto;
 import ru.practicum.shareit.booking.dto.BookingStatusDto;
@@ -18,6 +19,7 @@ import java.util.List;
 import java.util.Objects;
 
 @Service
+@Transactional(readOnly = true)
 public class BookingServiceImpl implements BookingService {
     private final BookingRepository bookingRepository;
     private final UserService userService;
@@ -31,11 +33,18 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
+    @Transactional
     public BookingResponseDto createBooking(Long userId, BookingRequestDto bookingRequestDto) {
         User booker = userService.getValidUser(userId);
         Item item = itemService.getValidItem(bookingRequestDto.getItemId());
         if (!item.getAvailable()) {
             throw new ValidationException("Вещь для бронирования недоступна");
+        }
+        if (!bookingRequestDto.getEnd().isAfter(bookingRequestDto.getStart())) {
+            throw new ValidationException("Дата окончания должна быть позже даты начала");
+        }
+        if (Objects.equals(item.getOwner().getId(), userId)) {
+            throw new ValidationException("Владелец не может бронировать свою вещь");
         }
         Booking newBooking = BookingMapper.toBooking(bookingRequestDto);
         newBooking.setBooker(booker);
@@ -47,6 +56,7 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
+    @Transactional
     public BookingResponseDto approveBooking(Long userId, Long bookingId, boolean isApproved) {
         Booking booking = getValidBooking(bookingId);
 
@@ -55,7 +65,9 @@ public class BookingServiceImpl implements BookingService {
             throw new ForbiddenException("Пользователь не является владельцем вещи");
         }
 
-        userService.getValidUser(userId);
+        if (booking.getStatus() != BookingStatus.WAITING) {
+            throw new ValidationException("Это бронирование недоступно");
+        }
 
         booking.setStatus(isApproved ? BookingStatus.APPROVED : BookingStatus.REJECTED);
         Booking approvedBooking = bookingRepository.save(booking);
@@ -78,17 +90,18 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public List<BookingResponseDto> getBookingsForCurrentUser(Long userId, BookingStatusDto state) {
+    public List<BookingResponseDto> getBookingsForCurrentUser(Long userId, String state) {
         userService.getValidUser(userId);
+        BookingStatusDto bookingStatus = stateToBookingStatus(state);
         LocalDateTime now = LocalDateTime.now();
 
-        List<Booking> bookings = switch (state) {
-            case ALL -> bookingRepository.findAllByBookerId(userId);
+        List<Booking> bookings = switch (bookingStatus) {
+            case ALL -> bookingRepository.findByBookerIdOrderByStartDesc(userId);
             case CURRENT -> bookingRepository.findCurrentByBookerId(userId, now);
-            case PAST -> bookingRepository.findPastByBookerId(userId, now);
-            case FUTURE -> bookingRepository.findFutureByBookerId(userId, now);
-            case WAITING -> bookingRepository.findWaitingByBookerId(userId);
-            case REJECTED -> bookingRepository.findRejectedByBookerId(userId);
+            case PAST -> bookingRepository.findByBookerIdAndEndBeforeOrderByStartDesc(userId, now);
+            case FUTURE -> bookingRepository.findByBookerIdAndStartAfterOrderByStartDesc(userId, now);
+            case WAITING -> bookingRepository.findByBookerIdAndStatusOrderByStartDesc(userId, BookingStatus.WAITING);
+            case REJECTED -> bookingRepository.findByBookerIdAndStatusOrderByStartDesc(userId, BookingStatus.REJECTED);
         };
 
         return bookings.stream()
@@ -97,21 +110,18 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public List<BookingResponseDto> getOwnersBookings(Long userId, BookingStatusDto state) {
+    public List<BookingResponseDto> getOwnersBookings(Long userId, String state) {
         userService.getValidUser(userId);
+        BookingStatusDto bookingStatus = stateToBookingStatus(state);
         LocalDateTime now = LocalDateTime.now();
 
-        if (bookingRepository.findAllOwnersBookings(userId).isEmpty()) {
-            return List.of();
-        }
-
-        List<Booking> bookings = switch (state) {
-            case ALL -> bookingRepository.findAllOwnersBookings(userId);
+        List<Booking> bookings = switch (bookingStatus) {
+            case ALL -> bookingRepository.findByItemOwnerIdOrderByStartDesc(userId);
             case CURRENT -> bookingRepository.findCurrentOwnersBookings(userId, now);
-            case PAST -> bookingRepository.findPastOwnersBookings(userId, now);
-            case FUTURE -> bookingRepository.findFutureOwnersBookings(userId, now);
-            case WAITING -> bookingRepository.findWaitingOwnersBookings(userId);
-            case REJECTED -> bookingRepository.findRejectedOwnersBookings(userId);
+            case PAST -> bookingRepository.findByItemOwnerIdAndEndBeforeOrderByStartDesc(userId, now);
+            case FUTURE -> bookingRepository.findByItemOwnerIdAndStartAfterOrderByStartDesc(userId, now);
+            case WAITING -> bookingRepository.findByItemOwnerIdAndStatusOrderByStartDesc(userId, BookingStatus.WAITING);
+            case REJECTED -> bookingRepository.findByItemOwnerIdAndStatusOrderByStartDesc(userId, BookingStatus.REJECTED);
         };
 
         return bookings.stream()
@@ -122,5 +132,13 @@ public class BookingServiceImpl implements BookingService {
     private Booking getValidBooking(Long bookingId) {
         return bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new NotFoundException("Бронирование с id = " + bookingId + " не найдено"));
+    }
+
+    private BookingStatusDto stateToBookingStatus(String state) {
+        try {
+            return BookingStatusDto.valueOf(state.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new ValidationException("Запрос не поддерживается");
+        }
     }
 }
