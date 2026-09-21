@@ -3,10 +3,7 @@ package ru.practicum.shareit.item;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-import ru.practicum.shareit.item.dto.ItemOwnersResponseDto;
-import ru.practicum.shareit.item.dto.ItemRequestDto;
-import ru.practicum.shareit.item.dto.ItemResponseDto;
-import ru.practicum.shareit.item.dto.UpdateItemRequestDto;
+import ru.practicum.shareit.item.dto.*;
 
 import java.util.List;
 
@@ -29,8 +26,9 @@ public class ItemController {
     }
 
     @GetMapping("/{itemId}")
-    public ItemResponseDto findItemById(@PathVariable Long itemId) {
-        return itemService.getItemById(itemId);
+    public ItemWithCommentsResponseDto findItemById(@RequestHeader("X-Sharer-User-Id") Long userId,
+                                                    @PathVariable Long itemId) {
+        return itemService.getItemById(itemId, userId);
     }
 
     @PostMapping
@@ -49,5 +47,12 @@ public class ItemController {
     @GetMapping("/search")
     public List<ItemResponseDto> searchItems(@RequestParam String text) {
         return itemService.searchItems(text);
+    }
+
+    @PostMapping("/{itemId}/comment")
+    public CommentResponseDto createComment(@PathVariable Long itemId,
+                                 @RequestHeader("X-Sharer-User-Id") Long userId,
+                                 @Valid @RequestBody CommentRequestDto commentDto) {
+        return itemService.createComment(itemId, userId, commentDto);
     }
 }

@@ -82,8 +82,8 @@ public class UserServiceImpl implements UserService {
             throw new ValidationException("Имя пользователя не задано");
         }
 
-        log.warn("getValidUser userId={}", userId);
-        log.warn("all users ids = {}", userRepository.findAll().stream().map(User::getId).toList());
+        log.debug("getValidUser userId={}", userId);
+        log.debug("all users ids = {}", userRepository.findAll().stream().map(User::getId).toList());
 
         return userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("Пользователь с id = " + userId + " не найден"));

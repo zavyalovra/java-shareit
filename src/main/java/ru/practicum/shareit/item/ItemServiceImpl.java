@@ -7,16 +7,15 @@ import ru.practicum.shareit.booking.BookingRepository;
 import ru.practicum.shareit.booking.dto.BookingShortDto;
 import ru.practicum.shareit.exception.ForbiddenException;
 import ru.practicum.shareit.exception.NotFoundException;
-import ru.practicum.shareit.item.dto.ItemOwnersResponseDto;
-import ru.practicum.shareit.item.dto.ItemRequestDto;
-import ru.practicum.shareit.item.dto.ItemResponseDto;
-import ru.practicum.shareit.item.dto.UpdateItemRequestDto;
+import ru.practicum.shareit.exception.ValidationException;
+import ru.practicum.shareit.item.dto.*;
 import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserService;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -24,15 +23,18 @@ public class ItemServiceImpl implements ItemService {
     private final ItemRepository itemRepository;
     private final UserService userService;
     private final BookingRepository bookingRepository;
+    private final CommentRepository commentRepository;
 
     @Autowired
     public ItemServiceImpl(
             UserService userService,
             ItemRepository itemRepository,
-            BookingRepository bookingRepository) {
+            BookingRepository bookingRepository,
+            CommentRepository commentRepository) {
         this.itemRepository = itemRepository;
         this.userService = userService;
         this.bookingRepository = bookingRepository;
+        this.commentRepository = commentRepository;
     }
 
     @Override
@@ -72,9 +74,29 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public ItemResponseDto getItemById(Long itemId) {
+    public ItemWithCommentsResponseDto getItemById(Long itemId, Long userId) {
         Item item = getValidItem(itemId);
-        return ItemMapper.toResponseDto(item);
+        LocalDateTime now = LocalDateTime.now();
+        BookingShortDto lastBooking = null;
+        BookingShortDto nextBooking = null;
+
+        List<CommentResponseDto> comments = commentRepository.findByItemId(itemId).stream()
+                .map(ItemMapper::toCommentResponseDto)
+                .toList();
+
+        if (item.getOwner().getId().equals(userId)) {
+            lastBooking = bookingRepository.findLastBooking(List.of(item.getId()), now).stream()
+                    .findFirst()
+                    .map(this::toShortDto)
+                    .orElse(null);
+
+            nextBooking = bookingRepository.findNextBooking(List.of(item.getId()), now).stream()
+                    .findFirst()
+                    .map(this::toShortDto)
+                    .orElse(null);
+        }
+
+        return ItemMapper.toWithCommentsResponseDto(item, lastBooking, nextBooking, comments);
     }
 
     @Override
@@ -125,5 +147,31 @@ public class ItemServiceImpl implements ItemService {
         }
 
         return item;
+    }
+
+    @Override
+    public CommentResponseDto createComment(Long itemId, Long userId, CommentRequestDto commentDto) {
+        if (!validateBooking(itemId, userId)) {
+            throw new ValidationException("Пользователь не найден в истории брони этой вещи");
+        }
+
+        Item item = getValidItem(itemId);
+        User author = userService.getValidUser(userId);
+        Comment comment = CommentMapper.toComment(commentDto);
+        comment.setItem(item);
+        comment.setAuthor(author);
+        comment.setCreated(LocalDateTime.now());
+        Comment savedComment = commentRepository.save(comment);
+
+        return CommentMapper.toResponseDto(savedComment);
+    }
+
+    private boolean validateBooking(Long itemId, Long userId) {
+        LocalDateTime now = LocalDateTime.now();
+        Optional<Booking> existedBooking = bookingRepository.findCompletedBookings(itemId, userId, now)
+                .stream()
+                .findFirst();
+
+        return existedBooking.isPresent();
     }
 }

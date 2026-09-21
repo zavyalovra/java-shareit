@@ -99,4 +99,12 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             "and b.start > ?2 " +
             "order by b.start asc")
     List<Booking> findNextBooking(List<Long> itemIds, LocalDateTime now);
+
+    @Query(" select b from Booking b " +
+            "where b.item.id = ?1 " +
+            "and b.booker.id = ?2 " +
+            "and b.status = BookingStatus.APPROVED " +
+            "and b.end < ?3 " +
+            "order by b.end desc")
+    List<Booking> findCompletedBookings(Long itemId, Long bookerId, LocalDateTime now);
 }

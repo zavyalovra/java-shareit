@@ -3,10 +3,9 @@ package ru.practicum.shareit.item;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import ru.practicum.shareit.booking.dto.BookingShortDto;
-import ru.practicum.shareit.item.dto.ItemOwnersResponseDto;
-import ru.practicum.shareit.item.dto.ItemRequestDto;
-import ru.practicum.shareit.item.dto.ItemResponseDto;
-import ru.practicum.shareit.item.dto.UpdateItemRequestDto;
+import ru.practicum.shareit.item.dto.*;
+
+import java.util.List;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ItemMapper {
@@ -41,6 +40,31 @@ public class ItemMapper {
                 item.getAvailable(),
                 lastBooking,
                 nextBooking
+        );
+    }
+
+    public static CommentResponseDto toCommentResponseDto(Comment comment) {
+        return new CommentResponseDto(
+                comment.getId(),
+                comment.getText(),
+                comment.getAuthor().getName(),
+                comment.getCreated()
+        );
+    }
+
+    public static ItemWithCommentsResponseDto toWithCommentsResponseDto(
+            Item item,
+            BookingShortDto lastBooking,
+            BookingShortDto nextBooking,
+            List<CommentResponseDto> comments) {
+        return new ItemWithCommentsResponseDto(
+                item.getId(),
+                item.getName(),
+                item.getDescription(),
+                item.getAvailable(),
+                lastBooking,
+                nextBooking,
+                comments
         );
     }
 
