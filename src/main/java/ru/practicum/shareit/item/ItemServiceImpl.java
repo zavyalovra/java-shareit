@@ -40,7 +40,7 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public List<ItemOwnersResponseDto> getByOwnerId(Long userId) {
+    public List<ItemResponseDto> getByOwnerId(Long userId) {
         User owner = userService.getValidUser(userId);
         List<Item> items = itemRepository.findByOwnerId(owner.getId());
 
@@ -66,7 +66,7 @@ public class ItemServiceImpl implements ItemService {
                 ));
 
         return items.stream()
-                .map(item -> ItemMapper.toItemOwnersResponseDto(
+                .map(item -> ItemMapper.toResponseDto(
                         item,
                         toShortDto(lastByItem.get(item.getId())),
                         toShortDto(nextByItem.get(item.getId())),
@@ -83,7 +83,7 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public ItemWithCommentsResponseDto getItemById(Long itemId, Long userId) {
+    public ItemResponseDto getItemById(Long itemId, Long userId) {
         Item item = getValidItem(itemId);
         LocalDateTime now = LocalDateTime.now();
         BookingShortDto lastBooking = null;
@@ -105,32 +105,32 @@ public class ItemServiceImpl implements ItemService {
                     .orElse(null);
         }
 
-        return ItemMapper.toWithCommentsResponseDto(item, lastBooking, nextBooking, comments);
+        return ItemMapper.toResponseDto(item, lastBooking, nextBooking, comments);
     }
 
     @Override
     @Transactional
-    public ItemResponseDto createItem(Long userId, ItemRequestDto itemDto) {
+    public ItemShortResponseDto createItem(Long userId, ItemRequestDto itemDto) {
         User owner = userService.getValidUser(userId);
         Item item = ItemMapper.toItem(itemDto);
         item.setOwner(owner);
         Item savedItem = itemRepository.save(item);
 
-        return ItemMapper.toResponseDto(savedItem);
+        return ItemMapper.toShortResponseDto(savedItem);
     }
 
     @Override
     @Transactional
-    public ItemResponseDto updateItem(Long itemId, Long userId, UpdateItemRequestDto itemDto) {
+    public ItemShortResponseDto updateItem(Long itemId, Long userId, UpdateItemRequestDto itemDto) {
         Item item = getValidItemByOwnerId(itemId, userId);
         ItemMapper.applyUpdate(item, itemDto);
         Item savedItem = itemRepository.save(item);
 
-        return ItemMapper.toResponseDto(savedItem);
+        return ItemMapper.toShortResponseDto(savedItem);
     }
 
     @Override
-    public List<ItemResponseDto> searchItems(String text) {
+    public List<ItemShortResponseDto> searchItems(String text) {
         if (text == null || text.isBlank()) {
             return List.of();
         }
@@ -138,7 +138,7 @@ public class ItemServiceImpl implements ItemService {
         List<Item> searchResult = itemRepository.search(text);
 
         return searchResult.stream()
-                .map(ItemMapper::toResponseDto)
+                .map(ItemMapper::toShortResponseDto)
                 .toList();
     }
 

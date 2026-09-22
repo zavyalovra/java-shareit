@@ -97,7 +97,7 @@ public class BookingServiceImpl implements BookingService {
 
         List<Booking> bookings = switch (bookingStatus) {
             case ALL -> bookingRepository.findByBookerIdOrderByStartDesc(userId);
-            case CURRENT -> bookingRepository.findCurrentByBookerId(userId, now);
+            case CURRENT -> bookingRepository.findByBookerIdAndStartBeforeAndEndAfterOrderByStartDesc(userId, now, now);
             case PAST -> bookingRepository.findByBookerIdAndEndBeforeOrderByStartDesc(userId, now);
             case FUTURE -> bookingRepository.findByBookerIdAndStartAfterOrderByStartDesc(userId, now);
             case WAITING -> bookingRepository.findByBookerIdAndStatusOrderByStartDesc(userId, BookingStatus.WAITING);
@@ -117,7 +117,7 @@ public class BookingServiceImpl implements BookingService {
 
         List<Booking> bookings = switch (bookingStatus) {
             case ALL -> bookingRepository.findByItemOwnerIdOrderByStartDesc(userId);
-            case CURRENT -> bookingRepository.findCurrentOwnersBookings(userId, now);
+            case CURRENT -> bookingRepository.findByItemOwnerIdAndStartBeforeAndEndAfterOrderByStartDesc(userId, now, now);
             case PAST -> bookingRepository.findByItemOwnerIdAndEndBeforeOrderByStartDesc(userId, now);
             case FUTURE -> bookingRepository.findByItemOwnerIdAndStartAfterOrderByStartDesc(userId, now);
             case WAITING -> bookingRepository.findByItemOwnerIdAndStatusOrderByStartDesc(userId, BookingStatus.WAITING);

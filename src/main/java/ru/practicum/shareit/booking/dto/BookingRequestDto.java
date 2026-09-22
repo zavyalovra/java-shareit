@@ -15,7 +15,6 @@ public class BookingRequestDto {
 
     /** Дата и время начала бронирования */
     @NotNull
-    @Future
     private LocalDateTime start;
 
     /** Дата и время конца бронирования */

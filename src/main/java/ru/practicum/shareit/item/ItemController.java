@@ -21,31 +21,31 @@ public class ItemController {
     }
 
     @GetMapping
-    public List<ItemOwnersResponseDto> findOwnerItems(@RequestHeader("X-Sharer-User-Id") Long userId) {
+    public List<ItemResponseDto> findOwnerItems(@RequestHeader("X-Sharer-User-Id") Long userId) {
         return itemService.getByOwnerId(userId);
     }
 
     @GetMapping("/{itemId}")
-    public ItemWithCommentsResponseDto findItemById(@RequestHeader("X-Sharer-User-Id") Long userId,
-                                                    @PathVariable Long itemId) {
+    public ItemResponseDto findItemById(@RequestHeader("X-Sharer-User-Id") Long userId,
+                                             @PathVariable Long itemId) {
         return itemService.getItemById(itemId, userId);
     }
 
     @PostMapping
-    public ItemResponseDto createItem(@RequestHeader("X-Sharer-User-Id") Long userId,
-                                      @Valid @RequestBody ItemRequestDto itemRequestDto) {
+    public ItemShortResponseDto createItem(@RequestHeader("X-Sharer-User-Id") Long userId,
+                                           @Valid @RequestBody ItemRequestDto itemRequestDto) {
         return itemService.createItem(userId, itemRequestDto);
     }
 
     @PatchMapping("/{itemId}")
-    public ItemResponseDto updateItem(@PathVariable Long itemId,
-                                      @RequestHeader("X-Sharer-User-Id") Long userId,
-                                      @Valid @RequestBody UpdateItemRequestDto itemDto) {
+    public ItemShortResponseDto updateItem(@PathVariable Long itemId,
+                                           @RequestHeader("X-Sharer-User-Id") Long userId,
+                                           @Valid @RequestBody UpdateItemRequestDto itemDto) {
         return itemService.updateItem(itemId, userId, itemDto);
     }
 
     @GetMapping("/search")
-    public List<ItemResponseDto> searchItems(@RequestParam String text) {
+    public List<ItemShortResponseDto> searchItems(@RequestParam String text) {
         return itemService.searchItems(text);
     }
 

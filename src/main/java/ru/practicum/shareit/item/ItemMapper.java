@@ -20,8 +20,8 @@ public class ItemMapper {
         return item;
     }
 
-    public static ItemResponseDto toResponseDto(Item item) {
-        return new ItemResponseDto(
+    public static ItemShortResponseDto toShortResponseDto(Item item) {
+        return new ItemShortResponseDto(
                 item.getId(),
                 item.getName(),
                 item.getDescription(),
@@ -29,12 +29,12 @@ public class ItemMapper {
         );
     }
 
-    public static ItemOwnersResponseDto toItemOwnersResponseDto(
+    public static ItemResponseDto toResponseDto(
             Item item,
             BookingShortDto lastBooking,
             BookingShortDto nextBooking,
             List<CommentResponseDto> comments) {
-        return new ItemOwnersResponseDto(
+        return new ItemResponseDto(
                 item.getId(),
                 item.getName(),
                 item.getDescription(),
@@ -51,22 +51,6 @@ public class ItemMapper {
                 comment.getText(),
                 comment.getAuthor().getName(),
                 comment.getCreated()
-        );
-    }
-
-    public static ItemWithCommentsResponseDto toWithCommentsResponseDto(
-            Item item,
-            BookingShortDto lastBooking,
-            BookingShortDto nextBooking,
-            List<CommentResponseDto> comments) {
-        return new ItemWithCommentsResponseDto(
-                item.getId(),
-                item.getName(),
-                item.getDescription(),
-                item.getAvailable(),
-                lastBooking,
-                nextBooking,
-                comments
         );
     }
 

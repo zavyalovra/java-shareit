@@ -15,12 +15,8 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByBookerIdOrderByStartDesc(Long userId);
 
     @EntityGraph(attributePaths = {"booker", "item"})
-    @Query(" select b from Booking b " +
-            "where b.booker.id = ?1 " +
-            "and b.status = BookingStatus.APPROVED " +
-            "and b.start <= ?2 and b.end > ?2 " +
-            "order by b.start desc")
-    List<Booking> findCurrentByBookerId(Long userId, LocalDateTime now);
+    List<Booking> findByBookerIdAndStartBeforeAndEndAfterOrderByStartDesc(
+            Long userId, LocalDateTime start, LocalDateTime end);
 
     @EntityGraph(attributePaths = {"booker", "item"})
     List<Booking> findByBookerIdAndEndBeforeOrderByStartDesc(Long userId, LocalDateTime now);
@@ -35,12 +31,8 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByItemOwnerIdOrderByStartDesc(Long userId);
 
     @EntityGraph(attributePaths = {"booker", "item"})
-    @Query(" select b from Booking b " +
-            "where b.item.owner.id = ?1 " +
-            "and b.status = BookingStatus.APPROVED " +
-            "and b.start <= ?2 and b.end > ?2 " +
-            "order by b.start desc")
-    List<Booking> findCurrentOwnersBookings(Long userId, LocalDateTime now);
+    List<Booking> findByItemOwnerIdAndStartBeforeAndEndAfterOrderByStartDesc(
+            Long userId, LocalDateTime start, LocalDateTime end);
 
     @EntityGraph(attributePaths = {"booker", "item"})
     List<Booking> findByItemOwnerIdAndEndBeforeOrderByStartDesc(Long userId, LocalDateTime now);
