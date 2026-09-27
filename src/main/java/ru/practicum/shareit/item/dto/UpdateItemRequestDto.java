@@ -2,14 +2,12 @@ package ru.practicum.shareit.item.dto;
 
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 
 /**
  * TODO Sprint add-controllers.
  */
 @Data
-@AllArgsConstructor
 public class UpdateItemRequestDto {
 
     /** Краткое название вещи */
