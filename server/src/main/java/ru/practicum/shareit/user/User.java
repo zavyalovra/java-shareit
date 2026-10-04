@@ -2,7 +2,6 @@ package ru.practicum.shareit.user;
 
 import jakarta.persistence.*;
 import lombok.*;
-import jakarta.validation.constraints.*;
 
 /**
  * TODO Sprint add-controllers.
@@ -20,13 +19,9 @@ public class User {
     private Long id;
 
     /** Имя или логин пользователя */
-    @NotBlank(message = "Логин не может быть пустым")
     private String name;
 
     /** Уникальный адрес электронной почты */
-    @NotBlank(message = "Email не может быть пустым")
-    @NotNull(message = "Некорректный формат email")
-    @Email(message = "Некорректный формат email")
     private String email;
 
     @Override

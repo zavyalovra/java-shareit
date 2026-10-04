@@ -22,6 +22,8 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.*;
 
 public class ItemServiceImplTest extends IntegrationTest {
+    private static final Long NOT_EXIST_ID = Long.MAX_VALUE;
+
     @Autowired
     private ItemService itemService;
 
@@ -87,7 +89,7 @@ public class ItemServiceImplTest extends IntegrationTest {
     @Test
     @DisplayName("IntegrationTest-3: getByOwnerId несуществующего пользователя -> NotFoundException")
     void getByOwnerIdUserNotFound() {
-        assertThatThrownBy(() -> itemService.getByOwnerId(99L))
+        assertThatThrownBy(() -> itemService.getByOwnerId(NOT_EXIST_ID))
                 .isInstanceOf(NotFoundException.class);
     }
 
@@ -137,7 +139,7 @@ public class ItemServiceImplTest extends IntegrationTest {
         User user = persistUser("Monica", "monica@beluchi.com");
         flushAndClear();
 
-        assertThatThrownBy(() -> itemService.getItemById(99L, user.getId()))
+        assertThatThrownBy(() -> itemService.getItemById(NOT_EXIST_ID, user.getId()))
                 .isInstanceOf(NotFoundException.class);
     }
 
@@ -181,10 +183,10 @@ public class ItemServiceImplTest extends IntegrationTest {
         User owner = persistUser("Monica", "monica@beluchi.com");
         flushAndClear();
 
-        assertThatThrownBy(() -> itemService.createItem(owner.getId(), makeItemDto("Дрель", "Мощная", true, 99L)))
+        assertThatThrownBy(() -> itemService.createItem(owner.getId(), makeItemDto("Дрель", "Мощная", true, NOT_EXIST_ID)))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessageContaining("Запрос не найден");
-        assertThatThrownBy(() -> itemService.createItem(99L, makeItemDto("Дрель", "Мощная", true, null)))
+        assertThatThrownBy(() -> itemService.createItem(NOT_EXIST_ID, makeItemDto("Дрель", "Мощная", true, null)))
                 .isInstanceOf(NotFoundException.class);
     }
 
@@ -231,7 +233,7 @@ public class ItemServiceImplTest extends IntegrationTest {
         User owner = persistUser("Monica", "monica@beluchi.com");
         flushAndClear();
 
-        assertThatThrownBy(() -> itemService.updateItem(99L, owner.getId(), new UpdateItemRequestDto()))
+        assertThatThrownBy(() -> itemService.updateItem(NOT_EXIST_ID, owner.getId(), new UpdateItemRequestDto()))
                 .isInstanceOf(NotFoundException.class);
     }
 
@@ -335,7 +337,7 @@ public class ItemServiceImplTest extends IntegrationTest {
         User user = persistUser("Monica", "monica@beluchi.com");
         flushAndClear();
 
-        assertThatThrownBy(() -> itemService.createComment(99L, user.getId(), makeCommentDto("Текст")))
+        assertThatThrownBy(() -> itemService.createComment(NOT_EXIST_ID, user.getId(), makeCommentDto("Текст")))
                 .isInstanceOf(NotFoundException.class);
     }
 }

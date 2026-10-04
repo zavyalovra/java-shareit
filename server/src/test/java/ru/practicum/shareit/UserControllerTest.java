@@ -11,8 +11,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import ru.practicum.shareit.exception.ConflictException;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.user.UserController;
-import ru.practicum.shareit.user.UserRequestDto;
-import ru.practicum.shareit.user.UserResponseDto;
+import ru.practicum.shareit.user.dto.UserRequestDto;
+import ru.practicum.shareit.user.dto.UserResponseDto;
 import ru.practicum.shareit.user.UserService;
 
 import java.nio.charset.StandardCharsets;
@@ -28,6 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(controllers = UserController.class)
 public class UserControllerTest {
+    private static final Long NOT_EXIST_ID = Long.MAX_VALUE;
 
     @Autowired
     ObjectMapper mapper;
@@ -68,20 +69,7 @@ public class UserControllerTest {
     }
 
     @Test
-    @DisplayName("Feature-2: POST /users с некорректным email -> 400")
-    void createUserInvalidEmailReturns400() throws Exception {
-        mvc.perform(post("/users")
-                        .content(mapper.writeValueAsString(request("Monica", "monica-beluchi.com")))
-                        .characterEncoding(StandardCharsets.UTF_8)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Ошибка валидации"))
-                .andExpect(jsonPath("$.description").value(containsString("Некорректный формат email")));
-    }
-
-    @Test
-    @DisplayName("Feature-3: POST /users дубликат email -> 409")
+    @DisplayName("Feature-2: POST /users дубликат email -> 409")
     void createUserConflictReturns409() throws Exception {
         when(userService.createUser(any()))
                 .thenThrow(new ConflictException("Пользователь с email=monica@beluchi.com уже существует"));
@@ -97,7 +85,7 @@ public class UserControllerTest {
     }
 
     @Test
-    @DisplayName("Feature-4: GET /users -> 200 и список")
+    @DisplayName("Feature-3: GET /users -> 200 и список")
     void findAllUsersReturnsList() throws Exception {
         when(userService.getAllUsers()).thenReturn(List.of(
                 new UserResponseDto(1L, "Monica", "monica@beluchi.com"),
@@ -109,7 +97,7 @@ public class UserControllerTest {
     }
 
     @Test
-    @DisplayName("Feature-5: GET /users/{id} -> 200")
+    @DisplayName("Feature-4: GET /users/{id} -> 200")
     void findUserByIdReturnsUser() throws Exception {
         when(userService.getUserById(1L))
                 .thenReturn(new UserResponseDto(responseDto.getId(), responseDto.getName(), responseDto.getEmail()));
@@ -122,19 +110,19 @@ public class UserControllerTest {
     }
 
     @Test
-    @DisplayName("Feature-6: GET /users/{id} несуществующего -> 404")
+    @DisplayName("Feature-5: GET /users/{id} несуществующего -> 404")
     void findUserByIdNotFoundReturns404() throws Exception {
-        when(userService.getUserById(99L))
-                .thenThrow(new NotFoundException("Пользователь с id = 99 не найден"));
+        when(userService.getUserById(NOT_EXIST_ID))
+                .thenThrow(new NotFoundException("Пользователь с id = " + NOT_EXIST_ID + " не найден"));
 
-        mvc.perform(get("/users/99"))
+        mvc.perform(get("/users/" + NOT_EXIST_ID))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").value("Ресурс не найден"))
-                .andExpect(jsonPath("$.description").value("Пользователь с id = 99 не найден"));
+                .andExpect(jsonPath("$.description").value("Пользователь с id = " + NOT_EXIST_ID + " не найден"));
     }
 
     @Test
-    @DisplayName("Feature-7: PATCH /users/{id} -> 200 и обновлённый пользователь")
+    @DisplayName("Feature-6: PATCH /users/{id} -> 200 и обновлённый пользователь")
     void updateUserReturnsUpdated() throws Exception {
         when(userService.updateUser(eq(1L), any()))
                 .thenReturn(new UserResponseDto(responseDto.getId(), "New name", responseDto.getEmail()));
@@ -147,18 +135,7 @@ public class UserControllerTest {
     }
 
     @Test
-    @DisplayName("Feature-8: PATCH /users/{id} с некорректным email -> 400")
-    void updateUserInvalidEmailReturns400() throws Exception {
-        mvc.perform(patch("/users/1")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"bad-format-email\"}"))
-                .andExpect(status().isBadRequest());
-
-        verify(userService, never()).updateUser(any(), any());
-    }
-
-    @Test
-    @DisplayName("Feature-9: PATCH /users/{id} на занятый email -> 409")
+    @DisplayName("Feature-7: PATCH /users/{id} на занятый email -> 409")
     void updateUserConflictReturns409() throws Exception {
         when(userService.updateUser(anyLong(), any()))
                 .thenThrow(new ConflictException("Пользователь с email=monica@beluchi.com уже существует"));
@@ -170,7 +147,7 @@ public class UserControllerTest {
     }
 
     @Test
-    @DisplayName("Feature-10: DELETE /users/{id} -> 204")
+    @DisplayName("Feature-8: DELETE /users/{id} -> 204")
     void deleteUserReturns204() throws Exception {
         mvc.perform(delete("/users/1"))
                 .andExpect(status().isNoContent());

@@ -1,7 +1,6 @@
 package ru.practicum.shareit.item;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -26,14 +25,12 @@ public class Comment {
     private String text;
 
     /** Вещь, к которой относится комментарий */
-    @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "item_id", nullable = false)
     @ToString.Exclude
     private Item item;
 
     /** Автор комментария */
-    @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "author_id", nullable = false)
     @ToString.Exclude

@@ -3,6 +3,7 @@ package ru.practicum.shareit;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -20,8 +21,8 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -31,6 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(controllers = ItemController.class)
 public class ItemControllerTest {
+    private static final Long NOT_EXIST_ID = Long.MAX_VALUE;
     private static final String USER_HEADER = "X-Sharer-User-Id";
 
     @Autowired
@@ -110,14 +112,14 @@ public class ItemControllerTest {
     @Test
     @DisplayName("Feature-3: GET /items/{id} несуществующей вещи -> 404")
     void findItemByIdNotFoundReturns404() throws Exception {
-        when(itemService.getItemById(99L, 1L))
-                .thenThrow(new NotFoundException("Вещь с id=99 не найдена"));
+        when(itemService.getItemById(NOT_EXIST_ID, 1L))
+                .thenThrow(new NotFoundException("Вещь с id=" + NOT_EXIST_ID + " не найдена"));
 
-        mvc.perform(get("/items/99")
+        mvc.perform(get("/items/" + NOT_EXIST_ID)
                         .header(USER_HEADER, 1))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").value("Ресурс не найден"))
-                .andExpect(jsonPath("$.description").value("Вещь с id=99 не найдена"));
+                .andExpect(jsonPath("$.description").value("Вещь с id=" + NOT_EXIST_ID + " не найдена"));
     }
 
     @Test
@@ -137,72 +139,45 @@ public class ItemControllerTest {
                 .andExpect(jsonPath("$.id", is(responseDto.getId()), Long.class))
                 .andExpect(jsonPath("$.name", is(responseDto.getName())))
                 .andExpect(jsonPath("$.available", is(responseDto.getAvailable())));
+
+        ArgumentCaptor<ItemRequestDto> captor = ArgumentCaptor.forClass(ItemRequestDto.class);
+        verify(itemService).createItem(eq(1L), captor.capture());
+        assertThat(captor.getValue().getRequestId()).isNull();
     }
 
     @Test
-    @DisplayName("Feature-5: POST /items с пустым названием -> 400")
-    void createItemBlankNameReturns400() throws Exception {
+    @DisplayName("Feature-5: POST /items с requestId передаёт requestId в сервис")
+    void createItemRequestIdToService() throws Exception {
+        when(itemService.createItem(eq(1L), any()))
+                .thenReturn(responseDto);
+
         mvc.perform(post("/items")
                         .header(USER_HEADER, 1)
-                        .content(mapper.writeValueAsString(request(" ", "Мощная дрель", true)))
+                        .content("{\"name\":\"Дрель\",\"description\":\"Мощная дрель\","
+                                + "\"available\":true,\"requestId\":10}")
                         .characterEncoding(StandardCharsets.UTF_8)
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.description").value(containsString("Название не может быть пустым")));
+                .andExpect(status().isOk());
 
-        verify(itemService, never()).createItem(any(), any());
+        ArgumentCaptor<ItemRequestDto> captor = ArgumentCaptor.forClass(ItemRequestDto.class);
+        verify(itemService).createItem(eq(1L), captor.capture());
+
+        ItemRequestDto passed = captor.getValue();
+        assertThat(passed.getRequestId()).isEqualTo(10L);
+        assertThat(passed.getName()).isEqualTo("Дрель");
+        assertThat(passed.getDescription()).isEqualTo("Мощная дрель");
+        assertThat(passed.getAvailable()).isTrue();
     }
 
     @Test
-    @DisplayName("Feature-6: POST /items с названием длиннее 100 символов -> 400")
-    void createItemLongNameReturns400() throws Exception {
-        mvc.perform(post("/items")
-                        .header(USER_HEADER, 1)
-                        .content(mapper.writeValueAsString(request("a".repeat(101), "Мощная дрель", true)))
-                        .characterEncoding(StandardCharsets.UTF_8)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.description").value(containsString("Максимальная длина названия")));
-    }
-
-    @Test
-    @DisplayName("Feature-7: POST /items без description -> 400")
-    void createItemNoDescriptionReturns400() throws Exception {
-        mvc.perform(post("/items")
-                        .header(USER_HEADER, 1)
-                        .content(mapper.writeValueAsString(request("Дрель", null, true)))
-                        .characterEncoding(StandardCharsets.UTF_8)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
-
-        verify(itemService, never()).createItem(any(), any());
-    }
-
-    @Test
-    @DisplayName("Feature-8: POST /items без available -> 400")
-    void createItemNoAvailableReturns400() throws Exception {
-        mvc.perform(post("/items")
-                        .header(USER_HEADER, 1)
-                        .content(mapper.writeValueAsString(request("Дрель", "Берёт бетон", null)))
-                        .characterEncoding(StandardCharsets.UTF_8)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
-
-        verify(itemService, never()).createItem(any(), any());
-    }
-
-    @Test
-    @DisplayName("Feature-9: POST /items от несуществующего пользователя -> 404")
+    @DisplayName("Feature-6: POST /items от несуществующего пользователя -> 404")
     void createItemUserNotFoundReturns404() throws Exception {
-        when(itemService.createItem(eq(99L), any()))
-                .thenThrow(new NotFoundException("Пользователь с id = 99 не найден"));
+        when(itemService.createItem(eq(NOT_EXIST_ID), any()))
+                .thenThrow(new NotFoundException("Пользователь с id = " + NOT_EXIST_ID + " не найден"));
 
         mvc.perform(post("/items")
-                        .header(USER_HEADER, 99)
+                        .header(USER_HEADER, NOT_EXIST_ID)
                         .content(mapper.writeValueAsString(request("Дрель", "Берёт бетон", true)))
                         .characterEncoding(StandardCharsets.UTF_8)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -211,7 +186,7 @@ public class ItemControllerTest {
     }
 
     @Test
-    @DisplayName("Feature-10: PATCH /items/{id} -> 200 и обновлённая вещь")
+    @DisplayName("Feature-7: PATCH /items/{id} -> 200 и обновлённая вещь")
     void updateItemReturnsUpdated() throws Exception {
         when(itemService.updateItem(eq(10L), eq(1L), any()))
                 .thenReturn(new ItemShortResponseDto(responseDto.getId(), "Новая дрель",
@@ -227,7 +202,7 @@ public class ItemControllerTest {
     }
 
     @Test
-    @DisplayName("Feature-11: PATCH /items/{id} не владельцем -> 403")
+    @DisplayName("Feature-8: PATCH /items/{id} не владельцем -> 403")
     void updateItemNotOwnerReturns403() throws Exception {
         when(itemService.updateItem(eq(10L), eq(2L), any()))
                 .thenThrow(new ForbiddenException("Пользователь не владелец вещи"));
@@ -241,20 +216,7 @@ public class ItemControllerTest {
     }
 
     @Test
-    @DisplayName("Feature-12: PATCH /items/{id} с пустым именем -> 400")
-    void updateItemBlankNameReturns400() throws Exception {
-        mvc.perform(patch("/items/10")
-                        .header(USER_HEADER, 1)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"   \"}"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.description").value(containsString("Имя не может быть пустым")));
-
-        verify(itemService, never()).updateItem(any(), any(), any());
-    }
-
-    @Test
-    @DisplayName("Feature-13: GET /items/search?text= -> 200 и найденные вещи")
+    @DisplayName("Feature-9: GET /items/search?text= -> 200 и найденные вещи")
     void searchItemsReturnsList() throws Exception {
         when(itemService.searchItems("дрель")).thenReturn(List.of(responseDto));
 
@@ -266,7 +228,7 @@ public class ItemControllerTest {
     }
 
     @Test
-    @DisplayName("Feature-14: GET /items/search с пустым текстом -> 200 и пустой список")
+    @DisplayName("Feature-10: GET /items/search с пустым текстом -> 200 и пустой список")
     void searchItemsBlankTextReturnsEmptyList() throws Exception {
         when(itemService.searchItems("")).thenReturn(List.of());
 
@@ -277,7 +239,7 @@ public class ItemControllerTest {
     }
 
     @Test
-    @DisplayName("Feature-15: POST /items/{id}/comment -> 200 и комментарий")
+    @DisplayName("Feature-11: POST /items/{id}/comment -> 200 и комментарий")
     void createCommentReturnsComment() throws Exception {
         LocalDateTime created = LocalDateTime.of(2030, 5, 5, 12, 0, 0);
         when(itemService.createComment(eq(10L), eq(2L), any()))
@@ -297,7 +259,7 @@ public class ItemControllerTest {
     }
 
     @Test
-    @DisplayName("Feature-16: POST /items/{id}/comment без завершённой брони -> 400")
+    @DisplayName("Feature-12: POST /items/{id}/comment без завершённой брони -> 400")
     void createCommentNoBookingReturns400() throws Exception {
         when(itemService.createComment(eq(10L), eq(2L), any()))
                 .thenThrow(new ValidationException("Пользователь не найден в истории брони этой вещи"));
@@ -310,33 +272,5 @@ public class ItemControllerTest {
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("Ошибка валидации"));
-    }
-
-    @Test
-    @DisplayName("Feature-17: POST /items/{id}/comment с пустым текстом -> 400")
-    void createCommentBlankTextReturns400() throws Exception {
-        mvc.perform(post("/items/10/comment")
-                        .header(USER_HEADER, 2)
-                        .content(mapper.writeValueAsString(commentRequest("  ")))
-                        .characterEncoding(StandardCharsets.UTF_8)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.description").value(containsString("Содержание не может быть пустым")));
-
-        verify(itemService, never()).createComment(any(), any(), any());
-    }
-
-    @Test
-    @DisplayName("Feature-18: POST /items/{id}/comment с текстом длиннее 2000 символов -> 400")
-    void createCommentTooLongTextReturns400() throws Exception {
-        mvc.perform(post("/items/10/comment")
-                        .header(USER_HEADER, 2)
-                        .content(mapper.writeValueAsString(commentRequest("x".repeat(2001))))
-                        .characterEncoding(StandardCharsets.UTF_8)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.description").value(containsString("2000")));
     }
 }

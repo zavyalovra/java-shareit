@@ -6,11 +6,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import ru.practicum.shareit.booking.BookingStatus;
 import ru.practicum.shareit.exception.ConflictException;
 import ru.practicum.shareit.exception.NotFoundException;
-import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.item.Item;
 import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserRepository;
-import ru.practicum.shareit.user.UserResponseDto;
+import ru.practicum.shareit.user.dto.UserResponseDto;
 import ru.practicum.shareit.user.UserService;
 
 import java.time.LocalDateTime;
@@ -20,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class UserServiceImplTest extends IntegrationTest {
+    private static final Long NOT_EXIST_ID = Long.MAX_VALUE;
 
     @Autowired
     private UserService userService;
@@ -53,16 +53,7 @@ public class UserServiceImplTest extends IntegrationTest {
     }
 
     @Test
-    @DisplayName("IntegrationTest-3: createUser без имени или email -> ValidationException")
-    void createUserMissingFieldsThrowsValidation() {
-        assertThatThrownBy(() -> userService.createUser(makeUserDto(null, "monica@beluchi.com")))
-                .isInstanceOf(ValidationException.class);
-        assertThatThrownBy(() -> userService.createUser(makeUserDto("Dominica", null)))
-                .isInstanceOf(ValidationException.class);
-    }
-
-    @Test
-    @DisplayName("IntegrationTest-4: getAllUsers возвращает всех пользователей из БД")
+    @DisplayName("IntegrationTest-3: getAllUsers возвращает всех пользователей из БД")
     void getAllUsersReturnsAll() {
         persistUser("Monica", "monica@beluchi.com");
         persistUser("Dominica", "dominica@beluchi.com");
@@ -75,13 +66,13 @@ public class UserServiceImplTest extends IntegrationTest {
     }
 
     @Test
-    @DisplayName("IntegrationTest-5: getAllUsers при пустой БД возвращает пустой список")
+    @DisplayName("IntegrationTest-4: getAllUsers при пустой БД возвращает пустой список")
     void getAllUsersEmpty() {
         assertThat(userService.getAllUsers()).isEmpty();
     }
 
     @Test
-    @DisplayName("IntegrationTest-6: getUserById возвращает пользователя")
+    @DisplayName("IntegrationTest-5: getUserById возвращает пользователя")
     void getUserByIdReturnsUser() {
         User user = persistUser("Monica", "monica@beluchi.com");
         flushAndClear();
@@ -94,15 +85,15 @@ public class UserServiceImplTest extends IntegrationTest {
     }
 
     @Test
-    @DisplayName("IntegrationTest-7: getUserById несуществующего -> NotFoundException")
+    @DisplayName("IntegrationTest-6: getUserById несуществующего -> NotFoundException")
     void getUserById_notFound() {
-        assertThatThrownBy(() -> userService.getUserById(99L))
+        assertThatThrownBy(() -> userService.getUserById(NOT_EXIST_ID))
                 .isInstanceOf(NotFoundException.class)
-                .hasMessageContaining("99");
+                .hasMessageContaining(String.valueOf(NOT_EXIST_ID));
     }
 
     @Test
-    @DisplayName("IntegrationTest-8: updateUser меняет только переданные поля")
+    @DisplayName("IntegrationTest-7: updateUser меняет только переданные поля")
     void updateUserPartialUpdate() {
         User user = persistUser("Monica", "monica@beluchi.com");
         flushAndClear();
@@ -118,7 +109,7 @@ public class UserServiceImplTest extends IntegrationTest {
     }
 
     @Test
-    @DisplayName("IntegrationTest-9: updateUser с собственным email не вызывает конфликт")
+    @DisplayName("IntegrationTest-8: updateUser с собственным email не вызывает конфликт")
     void updateUser_ownEmail_ok() {
         User user = persistUser("Monica", "monica@beluchi.com");
         flushAndClear();
@@ -130,7 +121,7 @@ public class UserServiceImplTest extends IntegrationTest {
     }
 
     @Test
-    @DisplayName("IntegrationTest-10: updateUser на email другого пользователя -> ConflictException")
+    @DisplayName("IntegrationTest-9: updateUser на email другого пользователя -> ConflictException")
     void updateUser_emailTaken_throwsConflict() {
         User firstUser = persistUser("Monica", "monica@beluchi.com");
         User secondUser = persistUser("Dominica", "dominica@beluchi.com");
@@ -141,14 +132,14 @@ public class UserServiceImplTest extends IntegrationTest {
     }
 
     @Test
-    @DisplayName("IntegrationTest-11: updateUser несуществующего -> NotFoundException")
+    @DisplayName("IntegrationTest-10: updateUser несуществующего -> NotFoundException")
     void updateUserNotFound() {
-        assertThatThrownBy(() -> userService.updateUser(99L, makeUserDto("X", "x@x.ru")))
+        assertThatThrownBy(() -> userService.updateUser(NOT_EXIST_ID, makeUserDto("X", "x@x.ru")))
                 .isInstanceOf(NotFoundException.class);
     }
 
     @Test
-    @DisplayName("IntegrationTest-12: deleteUser удаляет пользователя из БД")
+    @DisplayName("IntegrationTest-11: deleteUser удаляет пользователя из БД")
     void deleteUserRemovesUser() {
         User user = persistUser("Monica", "monica@beluchi.com");
         flushAndClear();
@@ -160,7 +151,7 @@ public class UserServiceImplTest extends IntegrationTest {
     }
 
     @Test
-    @DisplayName("IntegrationTest-13: deleteUser каскадно удаляет вещи и бронирования пользователя")
+    @DisplayName("IntegrationTest-12: deleteUser каскадно удаляет вещи и бронирования пользователя")
     void deleteUserCascadesToItemsAndBookings() {
         User owner = persistUser("Owner", "owner@mail.ru");
         User booker = persistUser("Booker", "booker@mail.ru");

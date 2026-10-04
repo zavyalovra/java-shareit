@@ -1,8 +1,6 @@
 package ru.practicum.shareit.request;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import lombok.*;
 import ru.practicum.shareit.item.Item;
 import ru.practicum.shareit.user.User;
@@ -27,8 +25,6 @@ public class ItemRequest {
     private Long id;
 
     /** Текст запроса, содержащий описание требуемой вещи */
-    @NotBlank(message = "Описание не может быть пустым")
-    @Size(max = 1000, message = "Максимальная длина описания 1000 символов")
     private String description;
 
     /** Пользователь, создавший запрос */
@@ -41,8 +37,8 @@ public class ItemRequest {
     private LocalDateTime created;
 
     /** Вещи, связанные с запросом */
-    @OneToMany
-    @JoinColumn(name = "request_id")
+    @OneToMany(mappedBy = "request")
+    @ToString.Exclude
     private List<Item> items = new ArrayList<>();
 
     @Override

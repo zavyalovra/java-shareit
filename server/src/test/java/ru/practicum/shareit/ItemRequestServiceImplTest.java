@@ -3,7 +3,6 @@ package ru.practicum.shareit;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import ru.practicum.shareit.exception.ConflictException;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.item.Item;
 import ru.practicum.shareit.item.dto.ItemShortForRequestDto;
@@ -20,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class ItemRequestServiceImplTest extends IntegrationTest {
+    private static final Long NOT_EXIST_ID = Long.MAX_VALUE;
 
     @Autowired
     private ItemRequestService itemRequestService;
@@ -48,19 +48,7 @@ public class ItemRequestServiceImplTest extends IntegrationTest {
     }
 
     @Test
-    @DisplayName("IntegrationTest-2: addItemRequest с тем же описанием от того же пользователя -> ConflictException")
-    void addItemRequestDuplicateThrowsConflict() {
-        User requestor = persistUser("Monica", "monica@beluchi.com");
-        persistRequest(requestor, "Нужна дрель", LocalDateTime.now().minusDays(1));
-        flushAndClear();
-
-        assertThatThrownBy(() -> itemRequestService.addItemRequest(requestor.getId(), makeRequestDto("Нужна дрель")))
-                .isInstanceOf(ConflictException.class);
-        assertThat(itemRequestRepository.findAll()).hasSize(1);
-    }
-
-    @Test
-    @DisplayName("IntegrationTest-3: то же описание от другого пользователя допустимо")
+    @DisplayName("IntegrationTest-2: то же описание от другого пользователя допустимо")
     void addItemRequestSameDescriptionDifferentUserOk() {
         User first = persistUser("Monica", "monica@beluchi.com");
         User second = persistUser("Dominica", "dominica@beluchi.com");
@@ -74,14 +62,14 @@ public class ItemRequestServiceImplTest extends IntegrationTest {
     }
 
     @Test
-    @DisplayName("IntegrationTest-4: addItemRequest несуществующего пользователя -> NotFoundException")
+    @DisplayName("IntegrationTest-3: addItemRequest несуществующего пользователя -> NotFoundException")
     void addItemRequestUserNotFound() {
-        assertThatThrownBy(() -> itemRequestService.addItemRequest(99L, makeRequestDto("Нужна дрель")))
+        assertThatThrownBy(() -> itemRequestService.addItemRequest(NOT_EXIST_ID, makeRequestDto("Нужна дрель")))
                 .isInstanceOf(NotFoundException.class);
     }
 
     @Test
-    @DisplayName("IntegrationTest-5: getUserRequests возвращает свои запросы, новые первыми, с предложенными вещами")
+    @DisplayName("IntegrationTest-4: getUserRequests возвращает свои запросы, новые первыми, с предложенными вещами")
     void getUserRequestsOwnRequestsNewestFirstWithItems() {
         LocalDateTime now = LocalDateTime.now();
         User requestor = persistUser("Monica", "monica@beluchi.com");
@@ -107,18 +95,18 @@ public class ItemRequestServiceImplTest extends IntegrationTest {
     }
 
     @Test
-    @DisplayName("IntegrationTest-6: getUserRequests у пользователя без запросов -> пустой список, неизвестный -> 404")
+    @DisplayName("IntegrationTest-5: getUserRequests у пользователя без запросов -> пустой список, неизвестный -> 404")
     void getUserRequestsEmptyAndNotFound() {
         User user = persistUser("Monica", "monica@beluchi.com");
         flushAndClear();
 
         assertThat(itemRequestService.getUserRequests(user.getId())).isEmpty();
-        assertThatThrownBy(() -> itemRequestService.getUserRequests(99L))
+        assertThatThrownBy(() -> itemRequestService.getUserRequests(NOT_EXIST_ID))
                 .isInstanceOf(NotFoundException.class);
     }
 
     @Test
-    @DisplayName("IntegrationTest-7: getAllRequests возвращает запросы других пользователей, новые первыми")
+    @DisplayName("IntegrationTest-6: getAllRequests возвращает запросы других пользователей, новые первыми")
     void getAllRequestsExcludesOwnAndSortsNewestFirst() {
         LocalDateTime now = LocalDateTime.now();
         User me = persistUser("Monica", "monica@beluchi.com");
@@ -129,7 +117,7 @@ public class ItemRequestServiceImplTest extends IntegrationTest {
         ItemRequest newer = persistRequest(second, "Запрос 2", now.minusDays(2));
         flushAndClear();
 
-        List<ItemRequestResponseDto> result = itemRequestService.getAllRequests(me.getId());
+        List<ItemRequestResponseDto> result = itemRequestService.getAllRequests(me.getId(), 0, 10);
 
         assertThat(result)
                 .extracting(ItemRequestResponseDto::getId)
@@ -140,14 +128,14 @@ public class ItemRequestServiceImplTest extends IntegrationTest {
     }
 
     @Test
-    @DisplayName("IntegrationTest-8: getAllRequests несуществующего пользователя -> NotFoundException")
+    @DisplayName("IntegrationTest-7: getAllRequests несуществующего пользователя -> NotFoundException")
     void getAllRequestsUserNotFound() {
-        assertThatThrownBy(() -> itemRequestService.getAllRequests(99L))
+        assertThatThrownBy(() -> itemRequestService.getAllRequests(NOT_EXIST_ID, 0, 10))
                 .isInstanceOf(NotFoundException.class);
     }
 
     @Test
-    @DisplayName("IntegrationTest-9: getByRequestId возвращает запрос с вещами")
+    @DisplayName("IntegrationTest-8: getByRequestId возвращает запрос с вещами")
     void getByRequestIdReturnsRequestWithItems() {
         User requestor = persistUser("Monica", "monica@beluchi.com");
         User owner = persistUser("Dominica", "dominica@beluchi.com");
@@ -168,9 +156,9 @@ public class ItemRequestServiceImplTest extends IntegrationTest {
     }
 
     @Test
-    @DisplayName("IntegrationTest-10: getByRequestId несуществующего запроса -> NotFoundException")
+    @DisplayName("IntegrationTest-9: getByRequestId несуществующего запроса -> NotFoundException")
     void getByRequestIdNotFound() {
-        assertThatThrownBy(() -> itemRequestService.getByRequestId(99L))
+        assertThatThrownBy(() -> itemRequestService.getByRequestId(NOT_EXIST_ID))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Запрос не найден");
     }

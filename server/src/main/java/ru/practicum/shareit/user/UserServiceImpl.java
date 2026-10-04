@@ -7,6 +7,8 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.exception.ConflictException;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.ValidationException;
+import ru.practicum.shareit.user.dto.UserRequestDto;
+import ru.practicum.shareit.user.dto.UserResponseDto;
 
 import java.util.List;
 
@@ -39,12 +41,6 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public UserResponseDto createUser(UserRequestDto userDto) {
-        if (userDto.getName() == null) {
-            throw new ValidationException("Имя пользователя не задано");
-        }
-        if (userDto.getEmail() == null) {
-            throw new ValidationException("Email пользователя не задан");
-        }
         if (userRepository.findByEmail(userDto.getEmail()).isPresent()) {
             throw new ConflictException("Пользователь с email=" + userDto.getEmail() + " уже существует");
         }

@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 
 @Repository
@@ -19,4 +20,7 @@ public interface ItemRepository extends JpaRepository<Item, Long> {
             " or upper(i.description) like upper(concat('%', ?1, '%'))) " +
             " and i.available = true")
     List<Item> search(String text);
+
+    @EntityGraph(attributePaths = {"owner"})
+    List<Item> findByRequestIdIn(Collection<Long> requestIds);
 }

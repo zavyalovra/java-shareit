@@ -20,6 +20,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public class BookingServiceImplTest extends IntegrationTest {
+    private static final Long NOT_EXIST_ID = Long.MAX_VALUE;
 
     @Autowired
     private BookingService bookingService;
@@ -146,11 +147,11 @@ public class BookingServiceImplTest extends IntegrationTest {
         flushAndClear();
         LocalDateTime start = LocalDateTime.now().plusDays(1);
 
-        assertThatThrownBy(() -> bookingService.createBooking(99L,
+        assertThatThrownBy(() -> bookingService.createBooking(NOT_EXIST_ID,
                 makeBookingDto(item.getId(), start, start.plusDays(1))))
                 .isInstanceOf(NotFoundException.class);
         assertThatThrownBy(() -> bookingService.createBooking(booker.getId(),
-                makeBookingDto(99L, start, start.plusDays(1))))
+                makeBookingDto(NOT_EXIST_ID, start, start.plusDays(1))))
                 .isInstanceOf(NotFoundException.class);
     }
 
@@ -227,7 +228,7 @@ public class BookingServiceImplTest extends IntegrationTest {
         User owner = persistUser("Monica", "monica@beluchi.com");
         flushAndClear();
 
-        assertThatThrownBy(() -> bookingService.approveBooking(owner.getId(), 99L, true))
+        assertThatThrownBy(() -> bookingService.approveBooking(owner.getId(), NOT_EXIST_ID, true))
                 .isInstanceOf(NotFoundException.class);
     }
 
@@ -271,9 +272,9 @@ public class BookingServiceImplTest extends IntegrationTest {
         User user = persistUser("Monica", "monica@beluchi.com");
         flushAndClear();
 
-        assertThatThrownBy(() -> bookingService.getBooking(user.getId(), 99L))
+        assertThatThrownBy(() -> bookingService.getBooking(user.getId(), NOT_EXIST_ID))
                 .isInstanceOf(NotFoundException.class);
-        assertThatThrownBy(() -> bookingService.getBooking(99L, 1L))
+        assertThatThrownBy(() -> bookingService.getBooking(NOT_EXIST_ID, 1L))
                 .isInstanceOf(NotFoundException.class);
     }
 
@@ -318,7 +319,7 @@ public class BookingServiceImplTest extends IntegrationTest {
     @Test
     @DisplayName("IntegrationTest-17: getBookingsForCurrentUser несуществующего пользователя -> NotFoundException")
     void getBookingsForCurrentUserNotFound() {
-        assertThatThrownBy(() -> bookingService.getBookingsForCurrentUser(99L, "ALL"))
+        assertThatThrownBy(() -> bookingService.getBookingsForCurrentUser(NOT_EXIST_ID, "ALL"))
                 .isInstanceOf(NotFoundException.class);
     }
 
@@ -349,7 +350,7 @@ public class BookingServiceImplTest extends IntegrationTest {
         assertThat(bookingService.getOwnersBookings(bookerId, "ALL")).isEmpty();
         assertThatThrownBy(() -> bookingService.getOwnersBookings(ownerId, "BAD"))
                 .isInstanceOf(ValidationException.class);
-        assertThatThrownBy(() -> bookingService.getOwnersBookings(99L, "ALL"))
+        assertThatThrownBy(() -> bookingService.getOwnersBookings(NOT_EXIST_ID, "ALL"))
                 .isInstanceOf(NotFoundException.class);
     }
 }

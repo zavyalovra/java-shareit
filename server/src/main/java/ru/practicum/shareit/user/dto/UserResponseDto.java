@@ -1,19 +1,18 @@
-package ru.practicum.shareit.user;
+package ru.practicum.shareit.user.dto;
 
-import jakarta.validation.constraints.Email;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
-public class UserRequestDto {
+public class UserResponseDto {
+
+    /** Уникальный идентификатор пользователя */
+    private Long id;
 
     /** Имя или логин пользователя */
     private String name;
 
     /** Уникальный адрес электронной почты */
-    @Email(message = "Некорректный формат email")
     private String email;
 }

@@ -13,7 +13,7 @@ public class UserCreateDto {
     @Size(max = 100, message = "Максимальная длина названия 100 символов")
     private String name;
 
-    @NotNull(message = "Email не может быть пустым")
+    @NotBlank(message = "Email не может быть пустым")
     @Email(message = "Некорректный формат email")
     private String email;
 }
