@@ -1,0 +1,18 @@
+package ru.practicum.shareit.item.dto;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class CommentRequestDto {
+
+    /** Содержимое комментария */
+    @NotBlank(message = "Содержание не может быть пустым")
+    @Size(max = 2000, message = "Максимальная длина текста 2000 символов")
+    private String text;
+}
